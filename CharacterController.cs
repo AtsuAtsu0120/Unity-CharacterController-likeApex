@@ -9,16 +9,16 @@ public class CharacterController : MonoBehaviour
     #region Fields_FromInspector
 
     [Header("Value Settings")]
-    [SerializeField] private float Speed = 100.0f;
+    [SerializeField] private float Speed = 50.0f;
     [SerializeField] private float JumpPower = 1000.0f;
     [SerializeField] private float Sensibility = 1.0f;
-    [SerializeField] private float CrounchSpeed = 50.0f;
+    [SerializeField] private float CrounchSpeed = 25.0f;
     [SerializeField] private float CrounchBoost = 3.0f;
     [SerializeField] private float CrouchCameraHeghit = 0.2f;
 
-    [SerializeField] private float MaxSpeed = 10.0f;
-    [SerializeField] private float MaxCrouchSpeed = 20.0f;
-    [SerializeField] private float MaxSprintSpeed = 12.0f;
+    [SerializeField] private float MaxSpeed = 8.0f;
+    [SerializeField] private float MaxCrouchSpeed = 15.0f;
+    [SerializeField] private float MaxSprintSpeed = 13.0f;
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI text;
@@ -52,11 +52,14 @@ public class CharacterController : MonoBehaviour
     private bool isSprintBeforeCrouch;
     private bool isSprint = false;
 
+    private bool isStraight = false; 
+
     #endregion
     #region Fields_Constant
 
     private readonly float MaxLimit = 85;
     private readonly float MinLimit = 360 - 85;
+    private readonly float StraightBonus = 2;
     private float DefaultMaxCrouchSpeed;
 
     #endregion
@@ -241,12 +244,24 @@ public class CharacterController : MonoBehaviour
         rb.AddForce(verticalForce);
         rb.AddForce(horizontalForce);
 
+        //方向によって速度ボーナスを与えれる。
+        var forceLocalDirection = transform.InverseTransformDirection(verticalForce);
+        if(forceLocalDirection.y < 0)
+        {
+            isStraight = true;
+        }
+        else
+        {
+            isStraight = false;             
+        }
+
         //重力を与える。
         rb.AddForce(new(0, inputVector.y, 0), ForceMode.Acceleration);
 
         //状態に応じて挙動を変更
         if(onGround)
         {
+            var speed = MaxSpeed;
             if(isCrouch)
             {
                 //しゃがみ続けると減速
@@ -255,18 +270,21 @@ public class CharacterController : MonoBehaviour
                     MaxCrouchSpeed -= 0.1f;
                 }
                 //しゃがみ最大速度
-                rb.velocity = Vector3.ClampMagnitude(rb.velocity, MaxCrouchSpeed);
+                speed = MaxCrouchSpeed;
             }
             else if(isSprint)
             {
-                rb.velocity = Vector3.ClampMagnitude(rb.velocity, MaxSprintSpeed);
+                //ダッシュの最大速度
+                speed = MaxSprintSpeed;
             }
-            //ダッシュでも、しゃがんでもないとき（歩き）
-            else
+
+            //まっすぐ進んでいたら速度にボーナスを与える。
+            if(isStraight)
             {
-                //歩き最大速度
-                rb.velocity = Vector3.ClampMagnitude(rb.velocity, MaxSpeed);
+                speed *= StraightBonus;
             }
+            //最大速度を設定
+            rb.velocity = Vector3.ClampMagnitude(rb.velocity, speed);
 
             //慣性をなくす:しゃがんでいないときは慣性なし
             if (!isCrouch)
