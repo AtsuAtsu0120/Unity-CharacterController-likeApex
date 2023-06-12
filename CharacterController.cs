@@ -22,6 +22,8 @@ public class CharacterController : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI text;
+    [Header("Layer")]
+    [SerializeField] private LayerMask WallLayer;
 
     #endregion
 
@@ -108,9 +110,11 @@ public class CharacterController : MonoBehaviour
     {
         //éãì_à⁄ìÆ
         var lookVector = lookAction.ReadValue<Vector2>();
-
-        var camLocalAngle = transform.localEulerAngles;
+        var camTransfrom = transform.GetChild(0);
+        //ècâÒì]ÇÕÉJÉÅÉâÇìÆÇ©Ç∑
+        var camLocalAngle = camTransform.localEulerAngles;
         camLocalAngle.x += -lookVector.y * Sensibility;
+        //ècâÒì]ÇÕêßå¿Ç†ÇË
         if (camLocalAngle.x > MaxLimit && camLocalAngle.x < 180)
         {
             camLocalAngle.x = MaxLimit;
@@ -119,8 +123,12 @@ public class CharacterController : MonoBehaviour
         {
             camLocalAngle.x = MinLimit;
         }
-        camLocalAngle.y += lookVector.x * Sensibility;
-        transform.localEulerAngles = camLocalAngle;
+        camTransform.localEulerAngles = camLocalAngle;
+
+        //â°âÒì]ÇÕPlayeré©ëÃÇìÆÇ©Ç∑
+        var localAngle = transform.localEulerAngles;
+        localAngle.y += lookVector.x * Sensibility;
+        transform.localEulerAngles = localAngle;
 
         //à⁄ìÆ
         float2 movementVector = moveAction.ReadValue<Vector2>();
@@ -131,6 +139,11 @@ public class CharacterController : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        #region CharactorMoveUp
+
+        GetWallStatus(0.5f, 1.0f, transform.forward);
+
+        #endregion
         #region CharactorMovement
 
         //èdóÕ
@@ -228,7 +241,7 @@ public class CharacterController : MonoBehaviour
 
     #endregion
 
-    #region Methos_static
+    #region Methods_Other
 
     private void AddForceForward(Rigidbody rb, Transform transfrom, float3 inputVector)
     {
@@ -304,6 +317,20 @@ public class CharacterController : MonoBehaviour
             }
         }
         text.text = "Speed:" + rb.velocity.magnitude.ToString();
+    }
+    private bool GetWallStatus(float offsetY, float distance, Vector3 direction)
+    {
+        Debug.DrawRay(transform.position + Vector3.up * offsetY, direction, Color.red, distance + 0.5f);
+        if (Physics.Raycast(transform.position + Vector3.up * offsetY, direction, distance + 0.5f, WallLayer, QueryTriggerInteraction.Ignore))
+        {
+            Debug.Log("ìñÇΩÇ¡ÇƒÇ¢Ç‹Ç∑ÅB");
+            return true;
+        }
+        else
+        {
+            Debug.Log("ìñÇΩÇ¡ÇƒÇ¢Ç‹ÇπÇÒÅB");
+            return false;
+        }
     }
 
     #endregion
