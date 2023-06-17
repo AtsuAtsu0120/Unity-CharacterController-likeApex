@@ -32,12 +32,12 @@ public class CharacterStateManager : MonoBehaviour
     #region Fields_InputSystem
 
     private StelthInputActions actions;
-    public InputAction moveAction;
-    public InputAction lookAction;
+    [HideInInspector] public InputAction moveAction;
+    [HideInInspector] public InputAction lookAction;
 
-    public InputAction upAction;
-    public InputAction downAction;
-    public InputAction sprintAction;
+    [HideInInspector] public InputAction upAction;
+    [HideInInspector] public InputAction downAction;
+    [HideInInspector] public InputAction sprintAction;
 
     #endregion
 
@@ -50,8 +50,6 @@ public class CharacterStateManager : MonoBehaviour
 
     private float crouchCooltime;
     private float standupCameraHeghit;
-
-    private State currentState;
 
     private bool isWallMode = false;
 
@@ -68,7 +66,12 @@ public class CharacterStateManager : MonoBehaviour
     private bool fixedHorizontalLook = false;
 
     #endregion
-       
+
+    #region Fields_State
+
+    private MovementState currentMovementState;
+    #endregion
+
     void Start()
     {
         //ÉJÅ[É\ÉãÇÃñ≥å¯âª
@@ -85,18 +88,23 @@ public class CharacterStateManager : MonoBehaviour
         //RigidbodyÇÃéÊìæ
         rb = GetComponent<Rigidbody>();
 
-        currentState = new WalkOnGround(this);
+        currentMovementState = new WalkOnGround(this);
+        currentMovementState.OnEnter();
     }
 
     // Update is called once per frame
     private void Update()
     {
-        currentState?.OnUpdate();
+        currentMovementState?.OnUpdate();
     }
-    public void ChangeState<T>(T state)where T : State
+    private void FixedUpdate()
     {
-        currentState?.OnExit();
-        currentState = state;
-        currentState.OnEnter();
+        currentMovementState?.OnFixedUpdate();
+    }
+    public void ChangeState<T>(T state)where T : MovementState
+    {
+        currentMovementState?.OnExit();
+        currentMovementState = state;
+        currentMovementState.OnEnter();
     }
 }

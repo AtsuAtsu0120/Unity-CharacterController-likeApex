@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public abstract class State
+public abstract class MovementState
 {
-    protected CharacterStateManager stateManager;
-    public State(CharacterStateManager stateManager)
+    protected CharacterStateManager stateManager { get; private set; }
+    public MovementState(CharacterStateManager stateManager)
     {
         this.stateManager = stateManager;
     }
@@ -25,5 +26,10 @@ public abstract class State
     /// このステートに切り替わったとき
     /// </summary>
     public abstract void OnExit();
+    /// <summary>
+    /// 衝突判定
+    /// </summary>
+    /// <param name="collider"></param>
     public abstract void OnEnterCollider(Collider collider);
+    public abstract void OnPerformUp(InputAction.CallbackContext ctx);
 }
