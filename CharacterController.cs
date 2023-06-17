@@ -2,6 +2,7 @@ using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Profiling;
 
 [RequireComponent(typeof(Rigidbody))]
 public class CharacterController : MonoBehaviour
@@ -19,6 +20,7 @@ public class CharacterController : MonoBehaviour
     [SerializeField] private float MaxSpeed = 8.0f;
     [SerializeField] private float MaxCrouchSpeed = 15.0f;
     [SerializeField] private float MaxSprintSpeed = 13.0f;
+    [SerializeField] private float MaxClimbSpeed = 5.0f;
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI text;
@@ -48,13 +50,19 @@ public class CharacterController : MonoBehaviour
     private float crouchCooltime;
     private float standupCameraHeghit;
 
+    private bool isWallMode = false;
+
     private bool onGround = false;
+    private bool onWall = false;
 
     private bool isCrouch = false;
     private bool isSprintBeforeCrouch;
     private bool isSprint = false;
+    private bool isJumping = false;
 
-    private bool isStraight = false; 
+    private bool isStraight = false;
+
+    private bool fixedHorizontalLook = false;
 
     #endregion
     #region Fields_Constant
@@ -63,9 +71,11 @@ public class CharacterController : MonoBehaviour
     private readonly float MinLimit = 360 - 85;
     private readonly float StraightBonus = 2;
     private float DefaultMaxCrouchSpeed;
+    private float DefaultMaxClimbSpeed;
 
     #endregion
 
+    public GameObject prefab;
     #region Methods_Unity
     private void Start()
     {
@@ -100,6 +110,7 @@ public class CharacterController : MonoBehaviour
 
         //しゃがんでいるときの速度を保存しておく
         DefaultMaxCrouchSpeed = MaxCrouchSpeed;
+        DefaultMaxClimbSpeed = MaxClimbSpeed;
     }
     private void OnDisable()
     {
@@ -108,6 +119,7 @@ public class CharacterController : MonoBehaviour
     }
     private void Update()
     {
+        Profiler.BeginSample("CharacterController-Update");
         //視点移動
         var lookVector = lookAction.ReadValue<Vector2>();
         var camTransfrom = transform.GetChild(0);
@@ -124,10 +136,22 @@ public class CharacterController : MonoBehaviour
             camLocalAngle.x = MinLimit;
         }
         camTransform.localEulerAngles = camLocalAngle;
-
-        //横回転はPlayer自体を動かす
         var localAngle = transform.localEulerAngles;
+        //横回転はPlayer自体を動かす
         localAngle.y += lookVector.x * Sensibility;
+        //壁のぼり中は制限あり
+        if (fixedHorizontalLook)
+        {
+            if (localAngle.y > 30 && localAngle.y < 180)
+            {
+                localAngle.y = 30;
+            }
+            if (localAngle.y < 330 && localAngle.y > 180)
+            {  
+                localAngle.y = 330;
+            }
+        }
+        Debug.Log(localAngle.y);
         transform.localEulerAngles = localAngle;
 
         //移動
@@ -136,29 +160,51 @@ public class CharacterController : MonoBehaviour
         movementVector *= Speed;
         inputVector.x = movementVector.x;
         inputVector.z = movementVector.y;
+        Profiler.EndSample();
     }
     private void FixedUpdate()
     {
-        #region CharactorMoveUp
-
-        GetWallStatus(0.5f, 1.0f, transform.forward);
-
-        #endregion
+        Debug.Log($"{isWallMode}:{fixedHorizontalLook}");
+        Profiler.BeginSample("CharacterController-FixedUpdate");
+        onWall = GetWallStatus(0.5f, 3.0f, transform.forward);
         #region CharactorMovement
 
-        //重力
-        if (!onGround)
+        //壁のぼり
+        var (_, verticalForce) = GetDirectionForce(inputVector, transform);
+        if (onWall && GetStraghitStatus(verticalForce) && isJumping)
         {
-            inputVector.y = Physics.gravity.y;
+            isWallMode = true;
+            fixedHorizontalLook = true;
+            Debug.Log("ウォールモード");
+        }
+        else if(!onWall)
+        {
+            isWallMode = false;
+            fixedHorizontalLook = false;
         }
 
-        //スライディングのクールタイムの減少
-        if (crouchCooltime >= 0.0f)
+        //壁登りの時
+        if (isWallMode)
         {
-            crouchCooltime -= Time.deltaTime;
+            AddForceUp(rb, transform, inputVector);
         }
+        //地上の時
+        else
+        {
+            //重力
+            if (!onGround)
+            {
+                inputVector.y = Physics.gravity.y;
+            }
 
-        AddForceForward(rb, transform, inputVector);
+            //スライディングのクールタイムの減少
+            if (crouchCooltime >= 0.0f)
+            {
+                crouchCooltime -= Time.deltaTime;
+            }
+
+            AddForceForward(rb, transform, inputVector);
+        }
 
         #endregion
 
@@ -179,6 +225,7 @@ public class CharacterController : MonoBehaviour
         }
 
         #endregion
+        Profiler.EndSample();
     }
     #endregion
 
@@ -188,16 +235,27 @@ public class CharacterController : MonoBehaviour
     {
         if (!onGround) return;
         rb.AddForce(new float3(0, JumpPower, 0));
+        //ジャンプ中
+        isJumping = true;
     }
     private void PerformDownAction(InputAction.CallbackContext ctx)
     {
-        isCrouch = true;
-        isSprintBeforeCrouch = isSprint;
-        isSprint = false;
-        if (crouchCooltime <= 0.0f)
+        //壁につかまっていたら壁のぼりをキャンセル
+        if(isWallMode)
         {
-            inputVector.z += CrounchBoost;
-            crouchCooltime = 5.0f;
+            isWallMode = false;
+            fixedHorizontalLook = false;
+        }
+        else
+        {
+            isCrouch = true;
+            isSprintBeforeCrouch = isSprint;
+            isSprint = false;
+            if (crouchCooltime <= 0.0f)
+            {
+                inputVector.z += CrounchBoost;
+                crouchCooltime = 5.0f;
+            }
         }
     }
     private void CancelDownAction(InputAction.CallbackContext ctx)
@@ -212,6 +270,7 @@ public class CharacterController : MonoBehaviour
     {
         isSprint = true;
         isCrouch = false;
+        isJumping = true;
     }
     private void CancelSpritAction(InputAction.CallbackContext ctx)
     {
@@ -227,8 +286,11 @@ public class CharacterController : MonoBehaviour
         if(collision.collider.tag == "Ground")
         {
             onGround = true;
+            MaxClimbSpeed = DefaultMaxClimbSpeed;
+            fixedHorizontalLook = false;
+            isJumping = false;
+            isWallMode = false;
             inputVector.y = 0;
-        
         }
     }
     private void OnCollisionExit(Collision collision)
@@ -236,6 +298,7 @@ public class CharacterController : MonoBehaviour
         if(collision.collider.tag == "Ground")
         {
             onGround = false;
+            isJumping = false;
         }
     }
 
@@ -245,28 +308,17 @@ public class CharacterController : MonoBehaviour
 
     private void AddForceForward(Rigidbody rb, Transform transfrom, float3 inputVector)
     {
-        //正面と右方向のベクトルを取得
-        float3 forward = new(transfrom.forward.x, 0, transfrom.forward.z);
-        float3 right = new(transfrom.right.x, 0, transfrom.right.z);
-
-        //入力から計算する。
-        var horizontalForce = right * inputVector.x;
-        var verticalForce = forward * inputVector.z;
+        //方向ごとに取得
+        var force = GetDirectionForce(inputVector, transform);
+        var verticalForce = force.verticalForce;
+        var horizontalForce = force.horizontalForce;
 
         //力を与える
         rb.AddForce(verticalForce);
         rb.AddForce(horizontalForce);
 
         //方向によって速度ボーナスを与えれる。
-        var forceLocalDirection = transform.InverseTransformDirection(verticalForce);
-        if(forceLocalDirection.y < 0)
-        {
-            isStraight = true;
-        }
-        else
-        {
-            isStraight = false;             
-        }
+        isStraight = GetStraghitStatus(verticalForce);
 
         //重力を与える。
         rb.AddForce(new(0, inputVector.y, 0), ForceMode.Acceleration);
@@ -318,19 +370,93 @@ public class CharacterController : MonoBehaviour
         }
         text.text = "Speed:" + rb.velocity.magnitude.ToString();
     }
+    public void AddForceUp(Rigidbody rb, Transform transfrom, float3 inputVector)
+    {
+        var speed = MaxClimbSpeed;
+        if (speed < 0)
+        {
+            Debug.Log("スピードが0以下になったよ");
+            //重力を与える。
+            rb.AddForce(new(0, Physics.gravity.y, 0), ForceMode.Acceleration);
+            isWallMode = false;
+            fixedHorizontalLook = false;
+        }
+        else
+        {
+            MaxClimbSpeed -= 0.05f;
+            var (upForce, horizontalForce) = GetWallForce(inputVector, transform);
+            rb.AddForce(upForce);
+            rb.AddForce(horizontalForce);
+            //最大速度を設定
+            rb.velocity = Vector3.ClampMagnitude(rb.velocity, speed);
+        }
+    }
     private bool GetWallStatus(float offsetY, float distance, Vector3 direction)
     {
         Debug.DrawRay(transform.position + Vector3.up * offsetY, direction, Color.red, distance + 0.5f);
         if (Physics.Raycast(transform.position + Vector3.up * offsetY, direction, distance + 0.5f, WallLayer, QueryTriggerInteraction.Ignore))
         {
-            Debug.Log("当たっています。");
             return true;
         }
         else
         {
-            Debug.Log("当たっていません。");
             return false;
         }
+    }
+    /// <summary>
+    /// 前方入力をしているかどうか判定
+    /// </summary>
+    /// <param name="verticalForce"></param>
+    /// <returns></returns>
+    private bool GetStraghitStatus(Vector3 verticalForce)
+    {
+        var forceLocalDirection = transform.InverseTransformDirection(verticalForce); 
+        if(isWallMode)
+        {
+            if(forceLocalDirection.y > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (forceLocalDirection.z > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+    private (Vector3 horizontalForce, Vector3 verticalForce) GetDirectionForce(Vector3 inputVector, Transform transform)
+    {
+        //正面と右方向のベクトルを取得
+        float3 forward = new(transform.forward.x, 0, transform.forward.z);
+        float3 right = new(transform.right.x, 0, transform.right.z);
+
+        //入力から計算する。
+        var horizontalForce = right * inputVector.x;
+        var verticalForce = forward * inputVector.z;
+
+        return (horizontalForce, verticalForce);
+    }
+    private (Vector3 upForce, Vector3 horizontalForce) GetWallForce(Vector3 inputVector, Transform transform)
+    {
+        //上と右方向のベクトルを取得
+        float3 up = new(0, transform.up.y, 0);
+        float3 right = new(transform.right.x, 0, transform.right.z);
+
+        //入力から計算する。
+        var horizontalForce = right * inputVector.x;
+        var upForce = up * inputVector.z;
+
+        return (upForce, horizontalForce);
     }
 
     #endregion
