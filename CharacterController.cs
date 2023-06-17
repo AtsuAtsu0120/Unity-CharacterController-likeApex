@@ -73,9 +73,14 @@ public class CharacterController : MonoBehaviour
     private float DefaultMaxCrouchSpeed;
     private float DefaultMaxClimbSpeed;
 
+    /// <summary>
+    /// 壁のぼりに入ったタイミングの角度を保存しておく変数。
+    /// </summary>
+    private float wallModeAngleY;
+    private GameObject wall;
+
     #endregion
 
-    public GameObject prefab;
     #region Methods_Unity
     private void Start()
     {
@@ -142,16 +147,17 @@ public class CharacterController : MonoBehaviour
         //壁のぼり中は制限あり
         if (fixedHorizontalLook)
         {
-            if (localAngle.y > 30 && localAngle.y < 180)
+            var angleY = localAngle.y - wallModeAngleY;
+
+            if (angleY > 30 && angleY < 0)
             {
                 localAngle.y = 30;
             }
-            if (localAngle.y < 330 && localAngle.y > 180)
+            if (angleY < -30 && angleY > 0)
             {  
                 localAngle.y = 330;
             }
         }
-        Debug.Log(localAngle.y);
         transform.localEulerAngles = localAngle;
 
         //移動
@@ -164,7 +170,6 @@ public class CharacterController : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        Debug.Log($"{isWallMode}:{fixedHorizontalLook}");
         Profiler.BeginSample("CharacterController-FixedUpdate");
         onWall = GetWallStatus(0.5f, 3.0f, transform.forward);
         #region CharactorMovement
@@ -173,6 +178,14 @@ public class CharacterController : MonoBehaviour
         var (_, verticalForce) = GetDirectionForce(inputVector, transform);
         if (onWall && GetStraghitStatus(verticalForce) && isJumping)
         {
+            //壁の方向を見る。
+            var direction = wall.transform.position - transform.position;
+            direction.y = 0;
+            var lookAngle = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Lerp(transform.rotation, lookAngle, 0.1f);
+            wallModeAngleY = transform.localEulerAngles.y;
+
+            //壁モードにする。
             isWallMode = true;
             fixedHorizontalLook = true;
             Debug.Log("ウォールモード");
@@ -394,8 +407,9 @@ public class CharacterController : MonoBehaviour
     private bool GetWallStatus(float offsetY, float distance, Vector3 direction)
     {
         Debug.DrawRay(transform.position + Vector3.up * offsetY, direction, Color.red, distance + 0.5f);
-        if (Physics.Raycast(transform.position + Vector3.up * offsetY, direction, distance + 0.5f, WallLayer, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(transform.position + Vector3.up * offsetY, direction, out var hit, distance + 0.5f, WallLayer, QueryTriggerInteraction.Ignore))
         {
+            wall = hit.transform.gameObject;
             return true;
         }
         else
