@@ -11,8 +11,8 @@ public class CharacterStateManager : MonoBehaviour
 
     [Header("Value Settings")]
     [SerializeField] private float Speed = 50.0f;
-    [SerializeField] private float JumpPower = 1000.0f;
-    [SerializeField] private float Sensibility = 1.0f;
+    public float JumpPower = 1000.0f;
+    public float Sensibility = 1.0f;
     [SerializeField] private float CrounchSpeed = 25.0f;
     [SerializeField] private float CrounchBoost = 3.0f;
     [SerializeField] private float CrouchCameraHeghit = 0.2f;
@@ -21,6 +21,10 @@ public class CharacterStateManager : MonoBehaviour
     [SerializeField] private float MaxCrouchSpeed = 15.0f;
     [SerializeField] private float MaxSprintSpeed = 13.0f;
     [SerializeField] private float MaxClimbSpeed = 5.0f;
+
+    public float MaxLimit = 85;
+    [HideInInspector] public float MinLimit;
+
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI text;
@@ -45,7 +49,7 @@ public class CharacterStateManager : MonoBehaviour
 
     public Rigidbody rb;
 
-    private Transform camTransform;
+    public Transform camTransform;
     private float3 inputVector;
 
     private float crouchCooltime;
@@ -70,6 +74,8 @@ public class CharacterStateManager : MonoBehaviour
     #region Fields_State
 
     private MovementState currentMovementState;
+    private ViewpointState currentViewpointState;
+
     #endregion
 
     void Start()
@@ -83,28 +89,69 @@ public class CharacterStateManager : MonoBehaviour
         actions.Enable();
         moveAction = actions.Player.Move;
         lookAction = actions.Player.Look;
+
+        upAction = actions.Player.Up;
+        downAction = actions.Player.Down;
+        sprintAction = actions.Player.Sprint;
+
         //ここまで
 
         //Rigidbodyの取得
         rb = GetComponent<Rigidbody>();
+        //カメラの場所を取得
+        camTransform = transform.GetChild(0).transform;
 
-        currentMovementState = new WalkOnGround(this);
-        currentMovementState.OnEnter();
+        MinLimit = 360 - MaxLimit;
+
+        ChangeState(new AirWalk(this));
+
+        currentViewpointState = new NormalViewpoint(this);
     }
 
     // Update is called once per frame
     private void Update()
     {
         currentMovementState?.OnUpdate();
+        currentViewpointState?.OnUpdate();
     }
     private void FixedUpdate()
     {
         currentMovementState?.OnFixedUpdate();
     }
-    public void ChangeState<T>(T state)where T : MovementState
+    private void OnCollisionEnter(Collision collision)
     {
+        currentMovementState.OnEnterCollider(collision);
+    }
+    public void ChangeState(MovementState state)
+    {
+        upAction.Disable();
+        downAction.Disable();
+        sprintAction.Disable();
+
+        ////キーをリセット
+        if (currentMovementState is not null)
+        {
+            upAction.performed -= currentMovementState.OnPerformUp;
+            downAction.performed -= currentMovementState.OnPerformDown;
+            downAction.canceled -= currentMovementState.OnCancelDown;
+            sprintAction.performed -= currentMovementState.OnPerformSprint;
+            sprintAction.canceled -= currentMovementState.OnCancelSprint;
+        }
+
         currentMovementState?.OnExit();
         currentMovementState = state;
+
+        ////キーを設定
+        upAction.performed += currentMovementState.OnPerformUp;
+        downAction.performed += currentMovementState.OnPerformDown;
+        downAction.canceled += currentMovementState.OnCancelDown;
+        sprintAction.performed += currentMovementState.OnPerformSprint;
+        sprintAction.canceled += currentMovementState.OnCancelSprint;
+
+        upAction.Enable();
+        downAction.Enable();
+        sprintAction.Enable();
+
         currentMovementState.OnEnter();
     }
 }

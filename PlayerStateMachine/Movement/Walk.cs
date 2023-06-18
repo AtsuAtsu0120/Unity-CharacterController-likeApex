@@ -1,5 +1,6 @@
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public abstract class Walk : MovementState
 {
@@ -8,14 +9,16 @@ public abstract class Walk : MovementState
     protected float MaxSpeed { get; set; }
     protected float StraightBonus { get; set; }
 
-    //フィールド
+    //プロパティ
     protected Vector3 horizontalForce { get; private set; }
     protected Vector3 verticalForce { get; private set; }
     protected Vector3 inputVector { get; private set; }
     protected Transform transform { get; private set; }
+
     public Walk(CharacterStateManager stateManager) : base(stateManager)
     {
-        
+        Speed = 50.0f;
+        MaxSpeed = 15.0f;
     }
 
     public override void OnEnter()
@@ -56,11 +59,11 @@ public abstract class Walk : MovementState
         {
             speed *= StraightBonus;
         }
+        var velocityWithoutY = new Vector3(stateManager.rb.velocity.x, 0f, stateManager.rb.velocity.z);
+        //最大速度に減少させる
+        velocityWithoutY = Vector3.ClampMagnitude(velocityWithoutY, speed);
 
-        //重力を与える。
-        stateManager.rb.AddForce(new(0, inputVector.y, 0), ForceMode.Acceleration);
-        //最大速度を設定
-        stateManager.rb.velocity = Vector3.ClampMagnitude(stateManager.rb.velocity, speed);
+        stateManager.rb.velocity = new(velocityWithoutY.x, stateManager.rb.velocity.y, velocityWithoutY.z);
     }
 
     public override void OnUpdate()
@@ -69,10 +72,34 @@ public abstract class Walk : MovementState
         float2 movementVector = stateManager.moveAction.ReadValue<Vector2>();
 
         movementVector *= Speed;
-        Debug.Log(movementVector);
         var input = inputVector;
         input.x = movementVector.x;
         input.z = movementVector.y;
         inputVector = input;
+    }
+
+    public override void OnEnterCollider(Collision collision)
+    {
+
+    }
+    public override void OnPerformUp(InputAction.CallbackContext ctx)
+    {
+
+    }
+    public override void OnPerformDown(InputAction.CallbackContext ctx)
+    {
+
+    }
+    public override void OnCancelDown(InputAction.CallbackContext ctx)
+    {
+
+    }
+    public override void OnPerformSprint(InputAction.CallbackContext ctx)
+    {
+        
+    }
+    public override void OnCancelSprint(InputAction.CallbackContext ctx)
+    {
+        
     }
 }

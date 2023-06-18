@@ -1,30 +1,32 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Sprint : Walk
+public class WalkOnGround : Walk
 {
-    public Sprint(CharacterStateManager stateManager) : base(stateManager)
+    public WalkOnGround(CharacterStateManager stateManager) : base(stateManager)
     {
 
     }
 
     public override void OnEnter()
     {
-        Speed = 80;
-        MaxSpeed = 18.0f;
+        Speed = 50.0f;
+        MaxSpeed = 15.0f;
+    }
+
+    public override void OnEnterCollider(Collision collision)
+    {
+        
     }
 
     public override void OnExit()
     {
-
+        Debug.Log("Exit");
     }
 
     public override void OnFixedUpdate()
     {
         base.OnFixedUpdate();
-
         //äµê´ÇÇ»Ç≠Ç∑
         if (Vector3.Magnitude(horizontalForce) == 0)
         {
@@ -39,18 +41,19 @@ public class Sprint : Walk
             stateManager.rb.velocity = transform.TransformDirection(localVelocity);
         }
     }
-    public override void OnUpdate()
-    {
-        base.OnUpdate();
-    }
-
-    public override void OnEnterCollider(Collider collider)
-    {
-        
-    }
 
     public override void OnPerformUp(InputAction.CallbackContext ctx)
     {
-        throw new System.NotImplementedException();
+        stateManager.rb.AddForce(new (0.0f, stateManager.JumpPower, 0.0f));
+        stateManager.ChangeState(new AirWalk(stateManager));
+    }
+    public override void OnPerformSprint(InputAction.CallbackContext ctx)
+    {
+        stateManager.ChangeState(new Sprint(stateManager));
+    }
+
+    public override void OnUpdate()
+    {
+        base.OnUpdate();
     }
 }
