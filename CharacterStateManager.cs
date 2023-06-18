@@ -20,7 +20,7 @@ public class CharacterStateManager : MonoBehaviour
     [SerializeField] private float MaxSpeed = 8.0f;
     [SerializeField] private float MaxCrouchSpeed = 15.0f;
     [SerializeField] private float MaxSprintSpeed = 13.0f;
-    [SerializeField] private float MaxClimbSpeed = 5.0f;
+    public float MaxClimbSpeed = 5.0f;
 
     public float MaxLimit = 85;
     [HideInInspector] public float MinLimit;
@@ -50,7 +50,7 @@ public class CharacterStateManager : MonoBehaviour
     public Rigidbody rb;
 
     public Transform camTransform;
-    private float3 inputVector;
+    public float3 inputVector;
 
     private float crouchCooltime;
     private float standupCameraHeghit;
