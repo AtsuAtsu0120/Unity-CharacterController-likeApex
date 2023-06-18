@@ -94,6 +94,10 @@ public class CharacterStateManager : MonoBehaviour
         downAction = actions.Player.Down;
         sprintAction = actions.Player.Sprint;
 
+        upAction.Enable();
+        downAction.Enable();
+        sprintAction.Enable();
+
         //ここまで
 
         //Rigidbodyの取得
@@ -124,10 +128,6 @@ public class CharacterStateManager : MonoBehaviour
     }
     public void ChangeState(MovementState state)
     {
-        upAction.Disable();
-        downAction.Disable();
-        sprintAction.Disable();
-
         ////キーをリセット
         if (currentMovementState is not null)
         {
@@ -147,10 +147,6 @@ public class CharacterStateManager : MonoBehaviour
         downAction.canceled += currentMovementState.OnCancelDown;
         sprintAction.performed += currentMovementState.OnPerformSprint;
         sprintAction.canceled += currentMovementState.OnCancelSprint;
-
-        upAction.Enable();
-        downAction.Enable();
-        sprintAction.Enable();
 
         currentMovementState.OnEnter();
     }

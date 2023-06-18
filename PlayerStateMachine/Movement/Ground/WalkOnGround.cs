@@ -51,7 +51,10 @@ public class WalkOnGround : Walk
     {
         stateManager.ChangeState(new Sprint(stateManager));
     }
-
+    public override void OnPerformDown(InputAction.CallbackContext ctx)
+    {
+        stateManager.ChangeState(new Crouch(stateManager));
+    }
     public override void OnUpdate()
     {
         base.OnUpdate();

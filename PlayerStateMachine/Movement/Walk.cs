@@ -12,7 +12,7 @@ public abstract class Walk : MovementState
     //プロパティ
     protected Vector3 horizontalForce { get; private set; }
     protected Vector3 verticalForce { get; private set; }
-    protected Vector3 inputVector { get; private set; }
+    protected Vector3 inputVector { get; set; }
     protected Transform transform { get; private set; }
 
     public Walk(CharacterStateManager stateManager) : base(stateManager)
