@@ -24,6 +24,7 @@ public class ClimbWall : MovementState
         if (MaxClimbSpeed < 0)
         {
             stateManager.ChangeState(new AirAfterClimb(stateManager));
+            stateManager.ChangeViewPointState(new NormalViewpoint(stateManager));
         }
         else
         {
@@ -59,7 +60,8 @@ public class ClimbWall : MovementState
 
     public override void OnPerformDown(InputAction.CallbackContext ctx)
     {
-        
+        stateManager.ChangeState(new AirAfterClimb(stateManager));
+        stateManager.ChangeViewPointState(new NormalViewpoint(stateManager));
     }
 
     public override void OnPerformSprint(InputAction.CallbackContext ctx)
@@ -74,7 +76,7 @@ public class ClimbWall : MovementState
 
     public override void OnCancelDown(InputAction.CallbackContext ctx)
     {
-        stateManager.ChangeState(new AirAfterClimb(stateManager));
+        
     }
 
     public override void OnCancelSprint(InputAction.CallbackContext ctx)

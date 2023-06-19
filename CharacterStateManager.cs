@@ -66,6 +66,7 @@ public class CharacterStateManager : MonoBehaviour
 
         //Rigidbody‚Ìæ“¾
         rb = GetComponent<Rigidbody>();
+
         //ƒJƒƒ‰‚ÌêŠ‚ğæ“¾
         camTransform = transform.GetChild(0).transform;
 
@@ -79,6 +80,8 @@ public class CharacterStateManager : MonoBehaviour
     {
         currentMovementState?.OnUpdate();
         currentViewpointState?.OnUpdate();
+
+        Debug.Log(currentMovementState.GetType());
     }
     private void FixedUpdate()
     {

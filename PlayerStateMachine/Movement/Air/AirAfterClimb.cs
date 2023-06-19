@@ -12,6 +12,9 @@ public class AirAfterClimb : Walk
     }
     public override void OnEnterCollider(Collision collision)
     {
-        stateManager.ChangeState(new WalkOnGround(stateManager));
+        if (collision.collider.CompareTag("Ground"))
+        {
+            stateManager.ChangeState(new WalkOnGround(stateManager));
+        }
     }
 }
