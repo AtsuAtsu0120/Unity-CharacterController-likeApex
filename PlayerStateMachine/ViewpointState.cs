@@ -1,8 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.InputSystem;
-
 public abstract class ViewpointState
 {
     protected CharacterStateManager stateManager { get; private set; }

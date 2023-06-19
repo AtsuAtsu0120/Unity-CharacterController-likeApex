@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 
 public class WalkOnGround : Walk
 {
+    private float JumpPower = 1000.0f;
     public WalkOnGround(CharacterStateManager stateManager) : base(stateManager)
     {
 
@@ -44,7 +45,7 @@ public class WalkOnGround : Walk
 
     public override void OnPerformUp(InputAction.CallbackContext ctx)
     {
-        stateManager.rb.AddForce(new (0.0f, stateManager.JumpPower, 0.0f));
+        stateManager.rb.AddForce(new (0.0f, JumpPower, 0.0f));
         stateManager.ChangeState(new AirWalk(stateManager));
     }
     public override void OnPerformSprint(InputAction.CallbackContext ctx)

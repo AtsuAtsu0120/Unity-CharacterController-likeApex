@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Crouch : Walk
@@ -8,19 +9,31 @@ public class Crouch : Walk
     public override void OnEnter()
     {
         Speed = 20.0f;
+        stateManager.ChangeViewPointState(new CrouchViewpoint(stateManager));
     }
     public override void OnFixedUpdate()
     {
         base.OnFixedUpdate();
 
-        if(Speed > MinSpeed)
+        if(Vector3.Magnitude(stateManager.rb.velocity) <= MinSpeed)
         {
-            Speed -= 0.1f;
+            Speed = 2.0f;
+        }
+        else
+        {
+            if (Speed > MinSpeed)
+            {
+                Speed -= 0.1f;
+            }
         }
     }
     public override void OnCancelDown(InputAction.CallbackContext ctx)
     {
         stateManager.ChangeState(new WalkOnGround(stateManager));
+    }
+    public override void OnExit()
+    {
+        stateManager.ChangeViewPointState(new ViewPointAfterCrouch(stateManager));
     }
 
 }

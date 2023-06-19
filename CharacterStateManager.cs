@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
@@ -8,23 +6,6 @@ using UnityEngine.InputSystem;
 public class CharacterStateManager : MonoBehaviour
 {
     #region Fields_FromInspector
-
-    [Header("Value Settings")]
-    [SerializeField] private float Speed = 50.0f;
-    public float JumpPower = 1000.0f;
-    public float Sensibility = 1.0f;
-    [SerializeField] private float CrounchSpeed = 25.0f;
-    [SerializeField] private float CrounchBoost = 3.0f;
-    [SerializeField] private float CrouchCameraHeghit = 0.2f;
-
-    [SerializeField] private float MaxSpeed = 8.0f;
-    [SerializeField] private float MaxCrouchSpeed = 15.0f;
-    [SerializeField] private float MaxSprintSpeed = 13.0f;
-    public float MaxClimbSpeed = 5.0f;
-
-    public float MaxLimit = 85;
-    [HideInInspector] public float MinLimit;
-
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI text;
@@ -51,23 +32,6 @@ public class CharacterStateManager : MonoBehaviour
 
     public Transform camTransform;
     public float3 inputVector;
-
-    private float crouchCooltime;
-    private float standupCameraHeghit;
-
-    private bool isWallMode = false;
-
-    private bool onGround = false;
-    private bool onWall = false;
-
-    private bool isCrouch = false;
-    private bool isSprintBeforeCrouch;
-    private bool isSprint = false;
-    private bool isJumping = false;
-
-    private bool isStraight = false;
-
-    private bool fixedHorizontalLook = false;
 
     #endregion
 
@@ -105,8 +69,6 @@ public class CharacterStateManager : MonoBehaviour
         //カメラの場所を取得
         camTransform = transform.GetChild(0).transform;
 
-        MinLimit = 360 - MaxLimit;
-
         ChangeState(new AirWalk(this));
 
         currentViewpointState = new NormalViewpoint(this);
@@ -141,7 +103,7 @@ public class CharacterStateManager : MonoBehaviour
         currentMovementState?.OnExit();
         currentMovementState = state;
 
-        ////キーを設定
+        //キーを設定
         upAction.performed += currentMovementState.OnPerformUp;
         downAction.performed += currentMovementState.OnPerformDown;
         downAction.canceled += currentMovementState.OnCancelDown;
@@ -149,5 +111,11 @@ public class CharacterStateManager : MonoBehaviour
         sprintAction.canceled += currentMovementState.OnCancelSprint;
 
         currentMovementState.OnEnter();
+    }
+    public void ChangeViewPointState(ViewpointState state)
+    {
+        currentViewpointState?.OnExit();
+        currentViewpointState = state;
+        currentViewpointState.OnEnter();
     }
 }

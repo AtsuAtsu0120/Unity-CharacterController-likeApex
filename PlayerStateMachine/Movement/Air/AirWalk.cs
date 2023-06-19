@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class AirWalk : Walk
 {
@@ -32,15 +30,15 @@ public class AirWalk : Walk
             }
         }
     }
+    public override void OnPerformDown(InputAction.CallbackContext ctx)
+    {
+        stateManager.ChangeState(new AirCrouch(stateManager));
+    }
     public override void OnEnterCollider(Collision collision)
     {
         if(collision.collider.CompareTag("Ground"))
         {
             stateManager.ChangeState(new WalkOnGround(stateManager));
         }
-    }
-    public override void OnUpdate()
-    {
-        base.OnUpdate();
     }
 }
