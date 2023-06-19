@@ -6,6 +6,10 @@ public class AirAfterClimb : Walk
 
     public override void OnFixedUpdate()
     {
+        //if(stateManager.rb.velocity.y < 0)
+        //{
+        //    stateManager.ChangeState(new WalkOnGround(stateManager));
+        //}
         //d—Í‚ð—^‚¦‚éB
         stateManager.rb.AddForce(new(0, Physics.gravity.y, 0), ForceMode.Acceleration);
         base.OnFixedUpdate();

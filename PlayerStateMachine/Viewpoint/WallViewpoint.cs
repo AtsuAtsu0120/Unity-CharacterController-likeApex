@@ -2,18 +2,12 @@ using UnityEngine;
 
 public class WallViewpoint : NormalViewpoint
 {
-    private RaycastHit hit;
-    private float limitY;
-    public WallViewpoint(CharacterStateManager stateManager, RaycastHit hit) : base(stateManager) { this.hit = hit; }
+    private float initAngle;
+    public WallViewpoint(CharacterStateManager stateManager) : base(stateManager) {  }
 
     public override void OnEnter()
     {
-        //•Ç‚Ì•ûŒü‚ðŒ©‚éB
-        var direction = hit.transform.position - stateManager.transform.position;
-        direction.y = 0;
-        var lookAngle = Quaternion.LookRotation(direction);
-        stateManager.transform.rotation = Quaternion.Lerp(stateManager.transform.rotation, lookAngle, 0.1f);
-        limitY = stateManager.transform.localEulerAngles.y;
+        initAngle = stateManager.transform.localEulerAngles.y;
     }
 
     public override void OnExit()
@@ -31,15 +25,15 @@ public class WallViewpoint : NormalViewpoint
         base.OnUpdate();
         var localAngle = stateManager.transform.localEulerAngles;
 
-        var angleY = localAngle.y - limitY;
+        var angleY = localAngle.y - initAngle;
 
         if (angleY > 30 && angleY < 90)
         {
-            localAngle.y = 30 + limitY;
+            localAngle.y = 30 + initAngle;
         }
         if (angleY < -30 && angleY > -90)
         {
-            localAngle.y = limitY - 30;
+            localAngle.y = initAngle - 30;
         }
         stateManager.transform.localEulerAngles = localAngle;
     }

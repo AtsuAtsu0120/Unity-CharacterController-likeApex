@@ -4,10 +4,13 @@ using UnityEngine.InputSystem;
 
 public class ClimbWall : MovementState
 {
-    public ClimbWall(CharacterStateManager stateManager) : base(stateManager) { }
-
     private float MaxClimbSpeed = 5.0f;
     private float Speed = 50.0f;
+    private RaycastHit hit;
+    public ClimbWall(CharacterStateManager stateManager, RaycastHit hit) : base(stateManager)
+    {
+        this.hit = hit;
+    }
     protected Vector3 inputVector { get; set; }
     public override void OnEnter()
     {
@@ -23,8 +26,7 @@ public class ClimbWall : MovementState
     {
         if (MaxClimbSpeed < 0)
         {
-            stateManager.ChangeState(new AirAfterClimb(stateManager));
-            stateManager.ChangeViewPointState(new NormalViewpoint(stateManager));
+            CancelWall();
         }
         else
         {
@@ -60,8 +62,7 @@ public class ClimbWall : MovementState
 
     public override void OnPerformDown(InputAction.CallbackContext ctx)
     {
-        stateManager.ChangeState(new AirAfterClimb(stateManager));
-        stateManager.ChangeViewPointState(new NormalViewpoint(stateManager));
+        CancelWall();
     }
 
     public override void OnPerformSprint(InputAction.CallbackContext ctx)
@@ -71,7 +72,14 @@ public class ClimbWall : MovementState
 
     public override void OnPerformUp(InputAction.CallbackContext ctx)
     {
-        
+        var fwdSpeed = Vector3.Dot(stateManager.rb.velocity, stateManager.transform.forward);
+        if (fwdSpeed > 0.5)
+        {
+            var refrectVector = Vector3.Reflect(stateManager.transform.forward, hit.normal);
+            refrectVector.y += 0.3f;
+            stateManager.rb.AddForce(refrectVector * 1000, ForceMode.Acceleration);
+        }
+        CancelWall();
     }
 
     public override void OnCancelDown(InputAction.CallbackContext ctx)
@@ -82,5 +90,11 @@ public class ClimbWall : MovementState
     public override void OnCancelSprint(InputAction.CallbackContext ctx)
     {
         
+    }
+
+    private void CancelWall()
+    {
+        stateManager.ChangeState(new AirAfterClimb(stateManager));
+        stateManager.ChangeViewPointState(new NormalViewpoint(stateManager));
     }
 }

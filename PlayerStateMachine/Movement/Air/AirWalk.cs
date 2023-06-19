@@ -26,8 +26,8 @@ public class AirWalk : Walk
         {
             if (Physics.Raycast(transform.position + Vector3.up * offsetY, direction, out var hit, distance + 0.5f, Physics.AllLayers, QueryTriggerInteraction.Ignore))
             {
-                stateManager.ChangeState(new ClimbWall(stateManager));
-                stateManager.ChangeViewPointState(new WallViewpoint(stateManager, hit));
+                stateManager.ChangeState(new ClimbWall(stateManager, hit));
+                stateManager.ChangeViewPointState(new WallViewpoint(stateManager));
             }
         }
     }
